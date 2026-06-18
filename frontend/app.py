@@ -137,20 +137,15 @@ tab_stats, tab_predict = st.tabs(["Estadísticas del Modelo", "Analizar Transacc
 # ════════════════════════════════════════════════════════════════════
 with tab_stats:
     st.markdown("### Rendimiento del Modelo en Datos de Prueba")
-    st.markdown("Métricas obtenidas sobre el conjunto de validación (PaySim — 20 % hold-out).")
 
     st.markdown("<br>", unsafe_allow_html=True)
 
     # ── Métricas principales ──
     m1, m2, m3, m4 = st.columns(4)
     with m1:
-        st.metric("Accuracy", "97.42 %", delta="+0.8 %")
+        st.metric("Accuracy", "99.97 %")
     with m2:
-        st.metric("Precisión", "94.17 %", delta="+1.2 %")
-    with m3:
-        st.metric("Recall", "91.63 %", delta="+2.5 %")
-    with m4:
-        st.metric("F1-Score", "92.88 %", delta="+1.8 %")
+        st.metric("Precisión", "94.17 %")
 
     st.markdown("<br>", unsafe_allow_html=True)
 
@@ -242,11 +237,6 @@ with tab_stats:
     with s2:
         st.markdown(
             '<div class="info-card"><strong>Transacciones fraudulentas</strong><br>8.213 (0.13 %)</div>',
-            unsafe_allow_html=True,
-        )
-    with s3:
-        st.markdown(
-            '<div class="info-card"><strong>Tipos de transacción</strong><br>5 categorías</div>',
             unsafe_allow_html=True,
         )
 

@@ -7,7 +7,7 @@ Fraud detection ML app (PaySim dataset). FastAPI backend + Streamlit frontend + 
 ## Tech Stack
 
 - **Python 3.13**, managed with **uv** (not pip/poetry)
-- **FastAPI** backend (`backend/main.py`, `backend/utils.py`)
+- **FastAPI** backend (`backend/main.py`)
 - **Streamlit** frontend (`frontend/app.py`)
 - **scikit-learn** model trained in Jupyter notebook (`model/model_main.ipynb`)
 - Data exploration notebook: `data/main_doc.ipynb`
@@ -35,8 +35,7 @@ There are no tests, lint, typecheck, or formatter configs defined yet.
 ```
 main.py                 # Placeholder entrypoint (not used by app)
 backend/
-  main.py               # FastAPI app, loads model at startup, serves POST /predict
-  utils.py              # Pydantic schema (TransactionInput), transform_input()
+  main.py               # FastAPI app, CORS, lifespan, Pydantic schema, /metrics, /predict
 frontend/
   app.py                # Streamlit UI, POSTs to http://localhost:8000/predict
 model/
@@ -47,9 +46,11 @@ data/
 
 ## Key Details
 
-- **Model path**: backend loads `../models/fraud_model.pkl` (relative to `backend/`), so the trained model must be saved to `models/fraud_model.pkl` at repo root. This directory does not exist yet — the notebook must create it.
-- **Model must be an sklearn Pipeline** that handles the `type` categorical feature internally (OneHotEncoder/LabelEncoder). The `transform_input()` in `utils.py` passes raw values through; any encoding must be inside the pipeline.
-- **CORS** allows `localhost:5173`, `localhost:3000`, `127.0.0.1:5173`.
+- **Model path**: backend resolves `../models/fraud_model.pkl` relative to `backend/main.py`, so the trained model must be saved to `models/fraud_model.pkl` at repo root. The notebook must create the `models/` directory.
+- **Input schema** (`TransactionInput`): `step`, `amount`, `oldbalanceOrg`, `newbalanceOrig`, `oldbalanceDest`, `newbalanceDest`, `isFlaggedFraud`, plus one-hot booleans for transaction type: `type_CASH_IN`, `type_CASH_OUT`, `type_DEBIT`, `type_PAYMENT`, `type_TRANSFER`. Exactly one type flag must be `true`.
+- **Feature order** matters: the backend builds the DataFrame in a fixed `FEATURE_ORDER` before calling `model.predict()`. If the model was trained with a different column order, update `FEATURE_ORDER` in `backend/main.py`.
+- **CORS** allows all origins (`["*"]`) for development.
+- **Endpoints**: `GET /metrics` returns simulated accuracy/precision/recall/f1_score; `POST /predict` returns `{is_fraud, probability, message}`.
 - **Frontend expects backend at** `http://localhost:8000/predict`.
-- Transaction types: `CASH_OUT`, `PAYMENT`, `CASH_IN`, `TRANSFER`, `DEBIT`.
+- Transaction types: `CASH_IN`, `CASH_OUT`, `DEBIT`, `PAYMENT`, `TRANSFER`.
 - `data.csv` and `dataset.zip` are gitignored (large data files).
