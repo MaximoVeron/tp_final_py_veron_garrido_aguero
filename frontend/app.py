@@ -12,28 +12,128 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ── Custom CSS ──
+# ── Custom CSS (light + dark mode) ──
 st.markdown("""
 <style>
-    /* Global */
-    .stApp {
-        background-color: #f5f7fa;
+    /* ═══════════════════════════════════════════
+       LIGHT MODE
+       ═══════════════════════════════════════════ */
+    [data-theme="light"] .stApp {
+        background-color: #f0f4f8;
     }
 
-    /* Sidebar */
-    [data-testid="stSidebar"] {
-        background-color: #e8f0fe;
+    /* Sidebar - blue gradient */
+    [data-theme="light"] [data-testid="stSidebar"] {
+        background: linear-gradient(180deg, #1a56db 0%, #1e40af 100%);
     }
-    [data-testid="stSidebar"] .stRadio label {
+    [data-theme="light"] [data-testid="stSidebar"] .stTitle {
+        color: #ffffff !important;
+    }
+    [data-theme="light"] [data-testid="stSidebar"] .stCaption {
+        color: #bfdbfe !important;
+    }
+    [data-theme="light"] [data-testid="stSidebar"] hr {
+        border-color: #3b82f6 !important;
+    }
+    [data-theme="light"] [data-testid="stSidebar"] .stRadio label {
+        color: #ffffff !important;
         font-size: 1.05rem;
         padding: 0.5rem 1rem;
         border-radius: 8px;
         transition: all 0.2s;
     }
-    [data-testid="stSidebar"] .stRadio label:hover {
-        background-color: #d2e3fc;
+    [data-theme="light"] [data-testid="stSidebar"] .stRadio label:hover {
+        background-color: rgba(255, 255, 255, 0.15);
+    }
+    [data-theme="light"] [data-testid="stSidebar"] .stRadio [data-baseweb="radio"] > label {
+        color: #ffffff !important;
+    }
+    [data-theme="light"] [data-testid="stSidebar"] .stRadio [data-baseweb="radio"] > div:first-child {
+        border-color: #60a5fa !important;
+        background-color: transparent !important;
+    }
+    [data-theme="light"] [data-testid="stSidebar"] .stRadio [aria-checked="true"] + div > div:first-child {
+        border-color: #ffffff !important;
+        background-color: #ffffff !important;
     }
 
+    /* Metric cards */
+    [data-theme="light"] [data-testid="metric-container"] {
+        background-color: #ffffff;
+        border-radius: 10px;
+        padding: 1rem;
+        box-shadow: 0 1px 6px rgba(0,0,0,0.08);
+        border-left: 4px solid #1a73e8;
+    }
+
+    /* Form container */
+    [data-theme="light"] div[data-testid="stForm"] {
+        background-color: #ffffff;
+        border-radius: 12px;
+        padding: 0.5rem 0 0.5rem 0;
+    }
+
+    /* ═══════════════════════════════════════════
+       DARK MODE
+       ═══════════════════════════════════════════ */
+    [data-theme="dark"] .stApp {
+        background-color: #0f172a;
+    }
+
+    /* Sidebar - darker blue */
+    [data-theme="dark"] [data-testid="stSidebar"] {
+        background: linear-gradient(180deg, #1e3a5f 0%, #1e293b 100%);
+    }
+    [data-theme="dark"] [data-testid="stSidebar"] .stTitle {
+        color: #ffffff !important;
+    }
+    [data-theme="dark"] [data-testid="stSidebar"] .stCaption {
+        color: #93c5fd !important;
+    }
+    [data-theme="dark"] [data-testid="stSidebar"] hr {
+        border-color: #3b82f6 !important;
+    }
+    [data-theme="dark"] [data-testid="stSidebar"] .stRadio label {
+        color: #e2e8f0 !important;
+        font-size: 1.05rem;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        transition: all 0.2s;
+    }
+    [data-theme="dark"] [data-testid="stSidebar"] .stRadio label:hover {
+        background-color: rgba(59, 130, 246, 0.2);
+    }
+    [data-theme="dark"] [data-testid="stSidebar"] .stRadio [data-baseweb="radio"] > label {
+        color: #e2e8f0 !important;
+    }
+    [data-theme="dark"] [data-testid="stSidebar"] .stRadio [data-baseweb="radio"] > div:first-child {
+        border-color: #60a5fa !important;
+        background-color: transparent !important;
+    }
+    [data-theme="dark"] [data-testid="stSidebar"] .stRadio [aria-checked="true"] + div > div:first-child {
+        border-color: #60a5fa !important;
+        background-color: #60a5fa !important;
+    }
+
+    /* Metric cards */
+    [data-theme="dark"] [data-testid="metric-container"] {
+        background-color: #1e293b;
+        border-radius: 10px;
+        padding: 1rem;
+        box-shadow: 0 1px 6px rgba(0,0,0,0.3);
+        border-left: 4px solid #3b82f6;
+    }
+
+    /* Form container */
+    [data-theme="dark"] div[data-testid="stForm"] {
+        background-color: #1e293b;
+        border-radius: 12px;
+        padding: 0.5rem 0 0.5rem 0;
+    }
+
+    /* ═══════════════════════════════════════════
+       SHARED (both modes)
+       ═══════════════════════════════════════════ */
     /* Submit button */
     div.stButton > button:first-child {
         background-color: #1a73e8;
@@ -52,20 +152,23 @@ st.markdown("""
         border: none;
     }
 
-    /* Metric cards */
-    [data-testid="metric-container"] {
-        background-color: #ffffff;
-        border-radius: 10px;
-        padding: 1rem;
-        box-shadow: 0 1px 6px rgba(0,0,0,0.08);
-        border-left: 4px solid #1a73e8;
+    /* Headings */
+    h1, h2, h3 {
+        color: inherit !important;
     }
 
-    /* Form container */
-    div[data-testid="stForm"] {
-        background-color: #ffffff;
-        border-radius: 12px;
-        padding: 0.5rem 0 0.5rem 0;
+    /* Result card text - theme aware */
+    [data-theme="light"] .result-card-prob {
+        color: #1a1a1a !important;
+    }
+    [data-theme="light"] .result-card-nivel {
+        color: #444444 !important;
+    }
+    [data-theme="dark"] .result-card-prob {
+        color: #f1f5f9 !important;
+    }
+    [data-theme="dark"] .result-card-nivel {
+        color: #cbd5e1 !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -160,7 +263,7 @@ else:
                 "Tipo de Transacción",
                 ["CASH_IN", "CASH_OUT", "DEBIT", "PAYMENT", "TRANSFER"],
             )
-            isFlaggedFraud = st.checkbox("isFlaggedFraud", help="Indica si la transacción fue marcada por el sistema")
+            
 
         submitted = st.form_submit_button("Analizar Transacción")
 
@@ -235,17 +338,15 @@ else:
                         ">
                             {status}
                         </p>
-                        <p style="
+                        <p class="result-card-prob" style="
                             font-size:2.8rem;
                             font-weight:700;
                             margin:8px 0;
-                            color:#1a1a1a;
                         ">
                             {prob:.2f}%
                         </p>
-                        <p style="
+                        <p class="result-card-nivel" style="
                             font-size:1rem;
-                            color:#444444;
                             margin:0;
                         ">
                             Nivel de alerta: <strong>{nivel}</strong>
