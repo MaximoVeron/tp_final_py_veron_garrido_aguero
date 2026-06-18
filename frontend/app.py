@@ -2,6 +2,13 @@ import streamlit as st
 import requests
 
 BACKEND_URL = "http://localhost:8000/predict"
+TRANSACTION_TYPES = [
+    "CASH_IN",
+    "CASH_OUT",
+    "DEBIT",
+    "PAYMENT",
+    "TRANSFER",
+]
 
 st.set_page_config(
     page_title="Trabajo Práctico Final de Python",
@@ -13,53 +20,47 @@ st.write("Ingrese los valores de la transacción para obtener una predicción.")
 
 with st.form("fraud_form"):
     step = st.number_input(
-        "Paso (step)",
-        min_value=1,
+        "step",
+        min_value=0,
         step=1,
-        help="Número de paso de la transacción.",
+        format="%d",
     )
 
-    transaction_type = st.selectbox(
-        "Tipo de transacción (type)",
-        options=[
-            "CASH_OUT",
-            "PAYMENT",
-            "CASH_IN",
-            "TRANSFER",
-            "DEBIT",
-        ],
+    type_ = st.selectbox(
+        "type",
+        options=TRANSACTION_TYPES,
     )
 
     amount = st.number_input(
-        "Monto (amount)",
+        "amount",
         min_value=0.0,
         step=1.0,
         format="%.2f",
     )
 
-    oldbalance_org = st.number_input(
-        "Saldo inicial origen (oldbalanceOrg)",
+    oldbalanceOrg = st.number_input(
+        "oldbalanceOrg",
         min_value=0.0,
         step=1.0,
         format="%.2f",
     )
 
-    newbalance_orig = st.number_input(
-        "Saldo final origen (newbalanceOrig)",
+    newbalanceOrig = st.number_input(
+        "newbalanceOrig",
         min_value=0.0,
         step=1.0,
         format="%.2f",
     )
 
-    oldbalance_dest = st.number_input(
-        "Saldo inicial destino (oldbalanceDest)",
+    oldbalanceDest = st.number_input(
+        "oldbalanceDest",
         min_value=0.0,
         step=1.0,
         format="%.2f",
     )
 
-    newbalance_dest = st.number_input(
-        "Saldo final destino (newbalanceDest)",
+    newbalanceDest = st.number_input(
+        "newbalanceDest",
         min_value=0.0,
         step=1.0,
         format="%.2f",
@@ -70,12 +71,12 @@ with st.form("fraud_form"):
 if submitted:
     payload = {
         "step": int(step),
-        "type": transaction_type,
+        "type": type_,
         "amount": float(amount),
-        "oldbalanceOrg": float(oldbalance_org),
-        "newbalanceOrig": float(newbalance_orig),
-        "oldbalanceDest": float(oldbalance_dest),
-        "newbalanceDest": float(newbalance_dest),
+        "oldbalanceOrg": float(oldbalanceOrg),
+        "newbalanceOrig": float(newbalanceOrig),
+        "oldbalanceDest": float(oldbalanceDest),
+        "newbalanceDest": float(newbalanceDest),
     }
 
     try:
@@ -86,16 +87,21 @@ if submitted:
 
         st.success(result.get("message", "Predicción realizada correctamente."))
 
-        col1, col2 = st.columns(2)
+        col1, col2, col3 = st.columns(3)
         with col1:
             st.metric(
                 "Resultado",
-                "Fraude" if result.get("is_fraud") else "Normal",
+                "Posible Fraude" if result.get("is_fraud") else "Normal",
             )
         with col2:
             st.metric(
                 "Probabilidad de fraude",
                 f"{result.get('fraud_probability', 0):.2f}%",
+            )
+        with col3:
+            st.metric(
+                "Nivel de alerta",
+                result.get("nivel_alerta"),
             )
 
     except requests.exceptions.RequestException as e:
