@@ -263,7 +263,6 @@ else:
                 "Tipo de Transacción",
                 ["CASH_IN", "CASH_OUT", "DEBIT", "PAYMENT", "TRANSFER"],
             )
-            
 
         submitted = st.form_submit_button("Analizar Transacción")
 
@@ -285,7 +284,6 @@ else:
             "type_DEBIT": type_map["DEBIT"],
             "type_PAYMENT": type_map["PAYMENT"],
             "type_TRANSFER": type_map["TRANSFER"],
-            "isFlaggedFraud": int(isFlaggedFraud),
         }
 
         try:
