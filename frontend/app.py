@@ -85,23 +85,27 @@ if submitted:
             response.raise_for_status()
             result = response.json()
 
-        st.success(result.get("message", "Predicción realizada correctamente."))
+        message = result.get("message", "Transacción analizada con éxito.")
+        fraud_probability = result.get("fraud_probability")
+        alert_level = result.get("nivel_alerta")
 
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.metric(
-                "Resultado",
-                "Posible Fraude" if result.get("is_fraud") else "Normal",
-            )
+        st.success(message)
+
+        col2, col3 = st.columns(3)
+        #with col1:
+            #st.metric(
+                #"Resultado",
+                #"Fraude" if result.get("is_fraud") else "Normal",
+            #)
         with col2:
             st.metric(
                 "Probabilidad de fraude",
-                f"{result.get('fraud_probability', 0):.2f}%",
+                f"{fraud_probability:.2f}%" if fraud_probability is not None else "",
             )
         with col3:
             st.metric(
                 "Nivel de alerta",
-                result.get("nivel_alerta"),
+                alert_level if alert_level is not None else "",
             )
 
     except requests.exceptions.RequestException as e:

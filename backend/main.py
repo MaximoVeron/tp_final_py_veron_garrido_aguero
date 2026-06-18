@@ -10,7 +10,7 @@ app = FastAPI(title="PaySim Fraud Detection API", version="1.0")
 # Configuramos CORS para permitir peticiones desde tu frontend (ej. localhost:5173 o 3000)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173"], 
+    allow_origins=["http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173", "http://127.0.0.1:8501"], 
     allow_credentials=True,
     allow_methods=["*"],  # Permite todos los métodos (GET, POST, etc.)
     allow_headers=["*"],  # Permite todos los headers
@@ -23,7 +23,7 @@ modelo_fraude = None
 @app.on_event("startup")
 def load_model():
     global modelo_fraude
-    model_path = "../models/fraud_model.pkl"
+    model_path = "../model/fraud_model.pkl"
     
     # Verificamos si el archivo del modelo existe antes de intentar cargarlo
     if os.path.exists(model_path):
