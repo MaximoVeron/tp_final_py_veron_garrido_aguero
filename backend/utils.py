@@ -1,9 +1,9 @@
+# utils.py
 from pydantic import BaseModel
 import pandas as pd
 
+TRANSACTION_TYPES = ["CASH_IN", "CASH_OUT", "DEBIT", "PAYMENT", "TRANSFER"]
 
-# 1. Definimos qué datos esperamos recibir del frontend y sus tipos.
-# Pydantic validará automáticamente que no falten campos o envíen texto en lugar de números.
 class TransactionInput(BaseModel):
     step: int
     type: str
@@ -13,15 +13,27 @@ class TransactionInput(BaseModel):
     oldbalanceDest: float
     newbalanceDest: float
 
-# 2. Función para transformar este JSON en un DataFrame de Pandas
 def transform_input(data: TransactionInput) -> pd.DataFrame:
-    # Convertimos los datos validados a un diccionario y luego a un DataFrame de 1 fila
     input_dict = data.model_dump()
     df = pd.DataFrame([input_dict])
-    
-    # NOTA PARA TU EQUIPO: 
-    # Si en su Jupyter Notebook hicieron transformaciones (ej. convertir "type" a números 
-    # usando OneHotEncoder o LabelEncoder), DEBEN aplicar esa misma lógica aquí antes de retornar el df.
-    # Lo ideal es que el archivo .pkl sea un "Pipeline" de sklearn que ya incluya la transformación.
-    
+
+    # Replicamos exactamente el get_dummies del notebook
+    df = pd.get_dummies(df, columns=["type"])
+
+    # Forzamos que existan TODAS las columnas que el modelo entrenó,
+    # rellenando con 0 las que no aparezcan en esta transacción
+    for t in TRANSACTION_TYPES:
+        col = f"type_{t}"
+        if col not in df.columns:
+            df[col] = 0
+
+    # Garantizamos el orden de columnas exacto que vio el modelo
+    expected_cols = [
+        "step", "amount", "oldbalanceOrg", "newbalanceOrig",
+        "oldbalanceDest", "newbalanceDest",
+        "type_CASH_IN", "type_CASH_OUT", "type_DEBIT",
+        "type_PAYMENT", "type_TRANSFER"
+    ]
+    df = df[expected_cols]
+
     return df

@@ -49,11 +49,21 @@ def predict_fraud(transaction: TransactionInput):
         # 3. (Opcional pero recomendado) Obtenemos la probabilidad para mostrar estadísticas en el frontend
         probabilities = modelo_fraude.predict_proba(input_df)
         fraud_probability = probabilities[0][1] # Probabilidad de pertenecer a la clase 1 (Fraude)
-        
+
+        def nivel_alerta(prob):
+            if prob < 0.30:
+                return "Muy Improbable"
+            elif prob < 0.70:
+                return "Probable / Sospechosa"
+            else:
+                return "Muy Probable"
+            # esto es una funcion de mapeo, en el  json te devuelve una probabilidad entre 0 y 1, a eso que te devuelve, lo tomas y lo pasas por la logica
+            nivel_alerta = mapear_nivel_alerta(fraud_probability)
         # 4. Retornamos la respuesta en formato JSON (FastAPI lo convierte automáticamente)
         return {
             "is_fraud": bool(prediction[0] == 1),
             "fraud_probability": round(float(fraud_probability) * 100, 2), # En porcentaje
+            "nivel_alerta": nivel_alerta(fraud_probability),
             "message": "Transacción analizada con éxito."
         }
         
