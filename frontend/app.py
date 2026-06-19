@@ -200,14 +200,14 @@ if page == "Dashboard":
     with c2:
         st.metric("Precision", "98.5%", help="Proporción de fraudes detectados que realmente son fraude")
     with c3:
-        st.metric("Recall", "82.3%", help="Proporción de fraudes reales que el modelo identificó")
+        st.metric("Recall", "65.2%", help="Proporción de fraudes reales que el modelo identificó")
 
     st.markdown("---")
 
     # Performance chart
     fig, ax = plt.subplots(figsize=(7, 4.5))
     metricas = ["Accuracy", "Precision", "Recall"]
-    valores = [99.7, 98.5, 82.3]
+    valores = [99.7, 98.5, 65.2]
     colores = ["#1a73e8", "#4285f4", "#669df6"]
 
     bars = ax.barh(metricas, valores, color=colores, edgecolor="white", linewidth=2, height=0.5)
