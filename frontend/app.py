@@ -271,7 +271,7 @@ if page == "Dashboard del Modelo":
         st.markdown("#### Interpretacion")
         st.markdown(
             "El modelo detecta el **99.6%** de los fraudes reales con solo "
-            "**30** falsas alarmas sobre mas de 128.000 transacciones legitimas."
+            "**30** falsas alarmas sobre mas de 552.409 transacciones legitimas."
         )
 
 else:
