@@ -232,28 +232,28 @@ def predict_fraud(transaction: TransactionInput):
 
         # 2. Predicción
         prediction = modelo_fraude.predict(input_df)
-        is_fraud = bool(prediction[0] == 1)
+        
+        # 3. (Opcional pero recomendado) Obtenemos la probabilidad para mostrar estadísticas en el frontend
+        probabilities = modelo_fraude.predict_proba(input_df)
+        fraud_probability = probabilities[0][1] # Probabilidad de pertenecer a la clase 1 (Fraude)
 
-        # 3. Probabilidad (si el modelo la soporta)
-        probability = 0.0
-        if hasattr(modelo_fraude, "predict_proba"):
-            proba = modelo_fraude.predict_proba(input_df)
-            # Clase 1 = fraude
-            probability = float(proba[0][1]) * 100
-
-        # 4. Mensaje legible
-        message = "Alerta de Fraude" if is_fraud else "Transacción Segura"
-
-        return PredictionResponse(
-            is_fraud=is_fraud,
-            probability=round(probability, 2),
-            message=message,
-        )
-
-    except HTTPException:
-        raise
-    except Exception as exc:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Error procesando la predicción: {str(exc)}",
-        )
+        def nivel_alerta(prob):
+            if prob < 0.30:
+                return "Muy Improbable"
+            elif prob < 0.70:
+                return "Probable / Sospechosa"
+            else:
+                return "Muy Probable"
+            # esto es una funcion de mapeo, en el  json te devuelve una probabilidad entre 0 y 1, a eso que te devuelve, lo tomas y lo pasas por la logica
+            nivel_alerta = mapear_nivel_alerta(fraud_probability)
+        # 4. Retornamos la respuesta en formato JSON (FastAPI lo convierte automáticamente)
+        return {
+            "is_fraud": bool(prediction[0] == 1),
+            "fraud_probability": round(float(fraud_probability) * 100, 2), # En porcentaje
+            "nivel_alerta": nivel_alerta(fraud_probability),
+            "message": "Transacción analizada con éxito."
+        }
+        
+    except Exception as e:
+        # Si algo falla en la transformación o predicción, devolvemos un error claro
+        raise HTTPException(status_code=400, detail=f"Error procesando la predicción: {str(e)}")

@@ -1,412 +1,377 @@
 import streamlit as st
-import matplotlib.pyplot as plt
+import requests
 import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib
+
+matplotlib.rcParams["font.family"] = "sans-serif"
+
+API_URL = "http://localhost:8000/predict"
 
 st.set_page_config(
-    page_title="FraudShield — Detección de Fraude",
-    page_icon="🛡️",
+    page_title="PreSIADA - Deteccion de Fraude",
+    page_icon=":material/shield:",
     layout="wide",
+    initial_sidebar_state="expanded",
 )
 
-# ── CSS personalizado ──────────────────────────────────────────────
-st.markdown(
-    """
-    <style>
-    /* ── Fondo general ── */
-    .stApp {
-        background-color: #F4F7FC;
+st.markdown("""
+<style>
+    /* ── LIGHT MODE ── */
+    [data-theme="light"] .stApp {
+        background-color: #f0f4f8;
     }
 
-    /* ── Sidebar ── */
-    section[data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #0B2545 0%, #13315C 100%);
-        color: #FFFFFF;
+    [data-theme="light"] [data-testid="stSidebar"] {
+        background: linear-gradient(180deg, #1a56db 0%, #1e40af 100%);
     }
-    section[data-testid="stSidebar"] * {
-        color: #FFFFFF !important;
+    [data-theme="light"] [data-testid="stSidebar"] * {
+        color: #ffffff !important;
     }
-    section[data-testid="stSidebar"] .stRadio label {
-        font-size: 1.05rem;
-    }
-
-    /* ── Métricas ── */
-    div[data-testid="stMetric"] {
-        background-color: #FFFFFF;
-        border: 1px solid #D6E4F0;
-        border-radius: 12px;
-        padding: 1rem 1.25rem;
-        box-shadow: 0 2px 8px rgba(11, 37, 69, 0.06);
-    }
-    div[data-testid="stMetricLabel"] {
-        color: #13315C;
-        font-weight: 600;
-    }
-    div[data-testid="stMetricValue"] {
-        color: #0B2545;
-    }
-
-    /* ── Botón principal ── */
-    .stButton > button {
-        background-color: #13315C;
-        color: #FFFFFF;
-        border: none;
-        border-radius: 8px;
-        padding: 0.6rem 2rem;
-        font-weight: 600;
+    [data-theme="light"] [data-testid="stSidebar"] .stRadio label {
         font-size: 1rem;
-        transition: background-color 0.2s;
-    }
-    .stButton > button:hover {
-        background-color: #1B4D89;
-        color: #FFFFFF;
-    }
-
-    /* ── Formulario ── */
-    div[data-testid="stForm"] {
-        background-color: #FFFFFF;
-        border: 1px solid #D6E4F0;
-        border-radius: 12px;
-        padding: 2rem;
-        box-shadow: 0 2px 8px rgba(11, 37, 69, 0.06);
-    }
-
-    /* ── Tabs ── */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 0.5rem;
-    }
-    .stTabs [data-baseweb="tab"] {
-        background-color: #FFFFFF;
+        padding: 0.4rem 0.8rem;
         border-radius: 8px;
-        padding: 0.5rem 1.25rem;
-        color: #13315C;
-        font-weight: 600;
-        border: 1px solid #D6E4F0;
     }
-    .stTabs [aria-selected="true"] {
-        background-color: #13315C !important;
-        color: #FFFFFF !important;
-        border-color: #13315C !important;
+    [data-theme="light"] [data-testid="stSidebar"] .stRadio label:hover {
+        background-color: rgba(255,255,255,0.15);
+    }
+    [data-theme="light"] [data-testid="stSidebar"] .stRadio [data-baseweb="radio"] > label {
+        color: #ffffff !important;
+    }
+    [data-theme="light"] [data-testid="stSidebar"] .stRadio [data-baseweb="radio"] > div:first-child {
+        border-color: #60a5fa !important;
+        background-color: transparent !important;
+    }
+    [data-theme="light"] [data-testid="stSidebar"] .stRadio [aria-checked="true"] + div > div:first-child {
+        border-color: #ffffff !important;
+        background-color: #ffffff !important;
     }
 
-    /* ── Encabezados ── */
-    h1, h2, h3 {
-        color: #0B2545 !important;
+    [data-theme="light"] [data-testid="metric-container"] {
+        background-color: #ffffff;
+        border-radius: 10px;
+        padding: 1rem;
+        box-shadow: 0 1px 6px rgba(0,0,0,0.08);
+        border-left: 4px solid #2563eb;
+    }
+    [data-theme="light"] [data-testid="metric-container"] label {
+        color: #374151 !important;
+    }
+    [data-theme="light"] [data-testid="metric-container"] [data-testid="stMetricValue"] {
+        color: #111827 !important;
     }
 
-    /* ── Cards personalizadas ── */
-    .info-card {
-        background-color: #FFFFFF;
-        border: 1px solid #D6E4F0;
+    [data-theme="light"] div[data-testid="stForm"] {
+        background-color: #ffffff;
         border-radius: 12px;
         padding: 1.5rem;
-        margin-bottom: 1rem;
-        box-shadow: 0 2px 8px rgba(11, 37, 69, 0.06);
+        border: 1px solid #e2e8f0;
     }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
+    [data-theme="light"] div[data-testid="stForm"] label {
+        color: #1f2937 !important;
+    }
+    [data-theme="light"] div[data-testid="stForm"] input {
+        color: #111827 !important;
+    }
+    [data-theme="light"] div[data-testid="stForm"] .stSelectbox label {
+        color: #1f2937 !important;
+    }
 
-# ── Sidebar ────────────────────────────────────────────────────────
+    [data-theme="light"] h1, [data-theme="light"] h2, [data-theme="light"] h3,
+    [data-theme="light"] h4, [data-theme="light"] p, [data-theme="light"] li,
+    [data-theme="light"] span, [data-theme="light"] label, [data-theme="light"] div {
+        color: #1e293b;
+    }
+
+    [data-theme="light"] .stMarkdown {
+        color: #334155;
+    }
+
+    /* ── DARK MODE ── */
+    [data-theme="dark"] .stApp {
+        background-color: #0f172a;
+    }
+
+    [data-theme="dark"] [data-testid="stSidebar"] {
+        background: linear-gradient(180deg, #1e3a5f 0%, #1e293b 100%);
+    }
+    [data-theme="dark"] [data-testid="stSidebar"] * {
+        color: #e2e8f0 !important;
+    }
+    [data-theme="dark"] [data-testid="stSidebar"] .stRadio label {
+        font-size: 1rem;
+        padding: 0.4rem 0.8rem;
+        border-radius: 8px;
+    }
+    [data-theme="dark"] [data-testid="stSidebar"] .stRadio label:hover {
+        background-color: rgba(59,130,246,0.2);
+    }
+    [data-theme="dark"] [data-testid="stSidebar"] .stRadio [data-baseweb="radio"] > label {
+        color: #e2e8f0 !important;
+    }
+    [data-theme="dark"] [data-testid="stSidebar"] .stRadio [data-baseweb="radio"] > div:first-child {
+        border-color: #60a5fa !important;
+        background-color: transparent !important;
+    }
+    [data-theme="dark"] [data-testid="stSidebar"] .stRadio [aria-checked="true"] + div > div:first-child {
+        border-color: #60a5fa !important;
+        background-color: #60a5fa !important;
+    }
+
+    [data-theme="dark"] [data-testid="metric-container"] {
+        background-color: #1e293b;
+        border-radius: 10px;
+        padding: 1rem;
+        box-shadow: 0 1px 6px rgba(0,0,0,0.3);
+        border-left: 4px solid #3b82f6;
+    }
+    [data-theme="dark"] [data-testid="metric-container"] label {
+        color: #94a3b8 !important;
+    }
+    [data-theme="dark"] [data-testid="metric-container"] [data-testid="stMetricValue"] {
+        color: #f1f5f9 !important;
+    }
+
+    [data-theme="dark"] div[data-testid="stForm"] {
+        background-color: #1e293b;
+        border-radius: 12px;
+        padding: 1.5rem;
+        border: 1px solid #334155;
+    }
+    [data-theme="dark"] div[data-testid="stForm"] label {
+        color: #e2e8f0 !important;
+    }
+    [data-theme="dark"] div[data-testid="stForm"] input {
+        color: #f1f5f9 !important;
+        background-color: #0f172a !important;
+    }
+    [data-theme="dark"] div[data-testid="stForm"] .stSelectbox label {
+        color: #e2e8f0 !important;
+    }
+
+    [data-theme="dark"] h1, [data-theme="dark"] h2, [data-theme="dark"] h3,
+    [data-theme="dark"] h4, [data-theme="dark"] p, [data-theme="dark"] li,
+    [data-theme="dark"] span, [data-theme="dark"] label, [data-theme="dark"] div {
+        color: #e2e8f0;
+    }
+
+    [data-theme="dark"] .stMarkdown {
+        color: #cbd5e1;
+    }
+
+    [data-theme="dark"] [data-testid="stExpander"] {
+        border-color: #334155;
+    }
+    [data-theme="dark"] [data-testid="stExpander"] summary span {
+        color: #e2e8f0 !important;
+    }
+
+    [data-theme="dark"] [data-testid="stSpinner"] > div {
+        border-top-color: #3b82f6;
+    }
+
+    /* ── SHARED ── */
+    div.stButton > button:first-child {
+        background: linear-gradient(135deg, #2563eb, #1d4ed8);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        padding: 0.7rem 2rem;
+        font-weight: 600;
+        font-size: 1rem;
+        width: 100%;
+    }
+    div.stButton > button:first-child:hover {
+        background: linear-gradient(135deg, #1d4ed8, #1e40af);
+    }
+
+    [data-testid="stHorizontalBlock"] > div {
+        color: inherit;
+    }
+
+    [data-testid="stAlert"] p {
+        color: inherit !important;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 with st.sidebar:
-    st.markdown("## 🛡️ FraudShield")
+    st.markdown("# PreSIADA")
+    st.caption("Sistema de Deteccion de Fraude Financiero")
     st.markdown("---")
-    st.markdown("#### Sistema de Detección")
+    page = st.radio("Navegacion", ["Dashboard del Modelo", "Simulador de Riesgo"])
+
+if page == "Dashboard del Modelo":
+    st.title("Dashboard del Modelo")
     st.markdown(
-        "Plataforma de análisis transaccional  \n"
-        "basada en aprendizaje automático."
+        "Clasificador **Random Forest** para deteccion de fraudes en transacciones "
     )
     st.markdown("---")
-    st.markdown(
-        "<small style='opacity:0.6;'>Trabajo Práctico Final — Python para Ciencia de Datos</small>",
-        unsafe_allow_html=True,
-    )
 
-# ── Título principal ───────────────────────────────────────────────
-st.markdown("# Detección de Fraude Financiero")
-st.markdown(
-    "Análisis en tiempo real de transacciones para identificar operaciones fraudulentas."
-)
-st.markdown("---")
+    st.subheader("Metricas de Rendimiento")
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        st.metric("Accuracy", "99.7%", help="Porcentaje de predicciones correctas")
+    with c2:
+        st.metric("Precision", "98.0%", help="Fraudes detectados que son reales")
+    with c3:
+        st.metric("Recall", "99.6%", help="Fraudes reales que fueron detectados")
 
-# ── Tabs ───────────────────────────────────────────────────────────
-tab_stats, tab_predict = st.tabs(["Estadísticas del Modelo", "Analizar Transacción"])
+    st.markdown("---")
+    st.subheader("Matriz de Confusion")
 
-# ════════════════════════════════════════════════════════════════════
-# TAB 1 — Estadísticas del Modelo
-# ════════════════════════════════════════════════════════════════════
-with tab_stats:
-    st.markdown("### Rendimiento del Modelo en Datos de Prueba")
+    fig, ax = plt.subplots(figsize=(6, 5))
 
-    st.markdown("<br>", unsafe_allow_html=True)
+    tn = 552409
+    fp = 30
+    fn = 6
+    tp = 1637
 
-    # ── Métricas principales ──
-    m1, m2, m3, m4 = st.columns(4)
-    with m1:
-        st.metric("Accuracy", "99.97 %")
-    with m2:
-        st.metric("Precisión", "94.17 %")
+    labels = np.array([
+        [f"TN\n{tn:,}", f"FP\n{fp}"],
+        [f"FN\n{fn}", f"TP\n{tp:,}"],
+    ])
 
-    st.markdown("<br>", unsafe_allow_html=True)
+    colors = np.array([["#d1fae5", "#fee2e2"], ["#fef3c7", "#dbeafe"]])
 
-    # ── Gráficos ──
-    chart_col1, chart_col2 = st.columns(2)
+    for i in range(2):
+        for j in range(2):
+            ax.add_patch(plt.Rectangle((j, 1 - i), 1, 1, facecolor=colors[i][j], edgecolor="white", linewidth=3))
+            ax.text(j + 0.5, 1.5 - i, labels[i][j], ha="center", va="center",
+                    fontsize=18, fontweight="bold", color="#1e293b")
 
-    with chart_col1:
-        st.markdown("#### Distribución de Predicciones")
-        labels = ["Correctas", "Incorrectas"]
-        sizes = [97.42, 2.58]
-        colors_pie = ["#13315C", "#8DAED4"]
-        explode = (0.04, 0)
+    ax.set_xlim(0, 2)
+    ax.set_ylim(0, 2)
+    ax.set_xticks([0.5, 1.5])
+    ax.set_xticklabels(["Pred: Normal", "Pred: Fraude"], fontsize=12, fontweight="bold")
+    ax.set_yticks([0.5, 1.5])
+    ax.set_yticklabels(["Real: Fraude", "Real: Normal"], fontsize=12, fontweight="bold")
+    ax.set_facecolor("#f8fafc")
+    fig.patch.set_facecolor("#f8fafc")
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.spines["left"].set_visible(False)
+    ax.spines["bottom"].set_visible(False)
+    ax.tick_params(length=0)
 
-        fig1, ax1 = plt.subplots(figsize=(5, 4))
-        ax1.pie(
-            sizes,
-            explode=explode,
-            labels=labels,
-            colors=colors_pie,
-            autopct="%1.1f%%",
-            startangle=90,
-            textprops={"fontsize": 11, "color": "#0B2545"},
-        )
-        ax1.set_facecolor("#F4F7FC")
-        fig1.patch.set_facecolor("#F4F7FC")
-        st.pyplot(fig1)
-        plt.close(fig1)
-
-    with chart_col2:
-        st.markdown("#### Métricas por Clase")
-        categories = ["Normal", "Fraude"]
-        precision_vals = [98.1, 94.2]
-        recall_vals = [99.3, 91.6]
-
-        x = np.arange(len(categories))
-        width = 0.32
-
-        fig2, ax2 = plt.subplots(figsize=(5, 4))
-        bars1 = ax2.bar(x - width / 2, precision_vals, width, label="Precisión", color="#13315C")
-        bars2 = ax2.bar(x + width / 2, recall_vals, width, label="Recall", color="#8DAED4")
-
-        ax2.set_ylabel("Porcentaje (%)", fontsize=11, color="#0B2545")
-        ax2.set_xticks(x)
-        ax2.set_xticklabels(categories, fontsize=11, color="#0B2545")
-        ax2.set_ylim(0, 110)
-        ax2.legend(fontsize=10)
-        ax2.set_facecolor("#F4F7FC")
-        fig2.patch.set_facecolor("#F4F7FC")
-        ax2.spines["top"].set_visible(False)
-        ax2.spines["right"].set_visible(False)
-        ax2.spines["left"].set_color("#D6E4F0")
-        ax2.spines["bottom"].set_color("#D6E4F0")
-        ax2.tick_params(colors="#0B2545")
-
-        for bar in bars1:
-            ax2.text(
-                bar.get_x() + bar.get_width() / 2,
-                bar.get_height() + 1.5,
-                f"{bar.get_height():.1f}%",
-                ha="center",
-                va="bottom",
-                fontsize=9,
-                color="#0B2545",
-            )
-        for bar in bars2:
-            ax2.text(
-                bar.get_x() + bar.get_width() / 2,
-                bar.get_height() + 1.5,
-                f"{bar.get_height():.1f}%",
-                ha="center",
-                va="bottom",
-                fontsize=9,
-                color="#0B2545",
-            )
-
-        st.pyplot(fig2)
-        plt.close(fig2)
-
-    # ── Resumen adicional ──
-    st.markdown("<br>", unsafe_allow_html=True)
-    st.markdown("#### Resumen del Conjunto de Datos")
-
-    s1, s2, s3 = st.columns(3)
-    with s1:
-        st.markdown(
-            '<div class="info-card"><strong>Total de transacciones</strong><br>6.362.620</div>',
-            unsafe_allow_html=True,
-        )
-    with s2:
-        st.markdown(
-            '<div class="info-card"><strong>Transacciones fraudulentas</strong><br>8.213 (0.13 %)</div>',
-            unsafe_allow_html=True,
-        )
-
-
-# ════════════════════════════════════════════════════════════════════
-# TAB 2 — Analizar Transacción
-# ════════════════════════════════════════════════════════════════════
-with tab_predict:
-    st.markdown("### Ingrese los Datos de la Transacción")
-    st.markdown(
-        "Complete los campos a continuación para evaluar si la operación presenta indicadores de fraude."
-    )
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    with st.form("fraud_form"):
-        # ── Fila 1: Step y Tipo ──
-        row1_col1, row1_col2 = st.columns(2)
-        with row1_col1:
-            step = st.number_input(
-                "Paso de Tiempo (Step)",
-                min_value=1,
-                max_value=744,
-                value=1,
-                step=1,
-                help="Número de paso temporal de la transacción (1–744).",
-            )
-        with row1_col2:
-            transaction_type = st.selectbox(
-                "Tipo de Transacción",
-                options=["CASH IN", "CASH OUT", "DEBIT", "PAYMENT", "TRANSFER"],
-                help="Seleccione el tipo de operación realizada.",
-            )
-
-        st.markdown("<br>", unsafe_allow_html=True)
-
-        # ── Fila 2: Monto ──
-        amount = st.number_input(
-            "Monto de la Transacción (Amount)",
-            min_value=0.0,
-            value=0.0,
-            step=100.0,
-            format="%.2f",
-            help="Monto total de la transacción en la moneda local.",
-        )
-
-        st.markdown("<br>", unsafe_allow_html=True)
-
-        # ── Fila 3: Saldos Origen ──
-        st.markdown("**Saldos de la Cuenta Origen**")
-        row3_col1, row3_col2 = st.columns(2)
-        with row3_col1:
-            oldbalance_org = st.number_input(
-                "Balance Original Anterior (oldbalanceOrg)",
-                min_value=0.0,
-                value=0.0,
-                step=1000.0,
-                format="%.2f",
-                help="Saldo de la cuenta de origen antes de la transacción.",
-            )
-        with row3_col2:
-            newbalance_orig = st.number_input(
-                "Nuevo Balance Original (newbalanceOrig)",
-                min_value=0.0,
-                value=0.0,
-                step=1000.0,
-                format="%.2f",
-                help="Saldo de la cuenta de origen después de la transacción.",
-            )
-
-        st.markdown("<br>", unsafe_allow_html=True)
-
-        # ── Fila 4: Saldos Destino ──
-        st.markdown("**Saldos de la Cuenta Destino**")
-        row4_col1, row4_col2 = st.columns(2)
-        with row4_col1:
-            oldbalance_dest = st.number_input(
-                "Balance Destino Anterior (oldbalanceDest)",
-                min_value=0.0,
-                value=0.0,
-                step=1000.0,
-                format="%.2f",
-                help="Saldo de la cuenta de destino antes de la transacción.",
-            )
-        with row4_col2:
-            newbalance_dest = st.number_input(
-                "Nuevo Balance Destino (newbalanceDest)",
-                min_value=0.0,
-                value=0.0,
-                step=1000.0,
-                format="%.2f",
-                help="Saldo de la cuenta de destino después de la transacción.",
-            )
-
-        st.markdown("<br>", unsafe_allow_html=True)
-
-        # ── Fila 5: Flag previo ──
-        is_flagged = st.checkbox(
-            "Flag de Fraude Previo (isFlaggedFraud)",
-            value=False,
-            help="Marque si la cuenta ya fue señalada previamente por actividad sospechosa.",
-        )
-
-        st.markdown("<br>", unsafe_allow_html=True)
-
-        submitted = st.form_submit_button(
-            "🛡️ Analizar Transacción",
-            use_container_width=True,
-        )
-
-    # ── Respuesta simulada ─────────────────────────────────────────
-    if submitted:
+    col_chart, col_stats = st.columns([3, 2])
+    with col_chart:
+        st.pyplot(fig)
+    with col_stats:
+        st.markdown("#### Resumen")
+        total_fraudes = tp + fn
+        st.markdown(f"- **Fraudes reales:** {total_fraudes:,}")
+        st.markdown(f"- **Fraudes detectados (TP):** {tp:,}")
+        st.markdown(f"- **Falsos negativos (FN):** {fn}")
+        st.markdown(f"- **Falsos positivos (FP):** {fp}")
+        st.markdown(f"- **Tasa de deteccion:** {tp / total_fraudes * 100:.1f}%")
         st.markdown("---")
-        st.markdown("### Resultado del Análisis")
+        st.markdown("#### Interpretacion")
+        st.markdown(
+            "El modelo detecta el **99.6%** de los fraudes reales con solo "
+            "**30** falsas alarmas sobre mas de 552.409 transacciones legitimas."
+        )
 
-        # Simulación: TRANSFER con monto alto → fraude
-        is_fraud = (transaction_type == "TRANSFER" and amount > 500000) or is_flagged
+else:
+    st.title("Simulador de Riesgo")
+    st.markdown(
+        "Ingrese los datos de una transaccion para evaluar su riesgo de fraude en tiempo real."
+    )
+    st.markdown("---")
 
-        fraud_prob = np.random.uniform(0.72, 0.96) if is_fraud else np.random.uniform(1.2, 8.5)
+    with st.form("form_transaccion"):
+        st.markdown("### Datos de la Transaccion")
 
-        result_col1, result_col2, result_col3 = st.columns(3)
+        col_a, col_b = st.columns(2)
 
-        with result_col1:
-            if is_fraud:
-                st.error("🚨  FRAUDE DETECTADO")
-            else:
-                st.success("✅  TRANSACCIÓN SEGURA")
-
-        with result_col2:
-            st.metric(
-                "Probabilidad de Fraude",
-                f"{fraud_prob:.2f} %",
-                delta="Alto riesgo" if is_fraud else "Bajo riesgo",
-                delta_color="inverse" if is_fraud else "normal",
+        with col_a:
+            transaction_type = st.selectbox(
+                "Tipo de Transaccion",
+                ["CASH_OUT", "TRANSFER"],
+                help="Solo se analizan CASH_OUT y TRANSFER",
+            )
+            amount = st.number_input(
+                "Monto (amount)", min_value=0.0, value=0.0, step=1000.0, format="%.2f"
+            )
+            oldbalanceOrg = st.number_input(
+                "Saldo anterior origen (oldbalanceOrg)", min_value=0.0, value=0.0, step=1000.0, format="%.2f"
+            )
+            newbalanceOrig = st.number_input(
+                "Saldo nuevo origen (newbalanceOrig)", min_value=0.0, value=0.0, step=1000.0, format="%.2f"
             )
 
-        with result_col3:
-            st.metric(
-                "Tipo de Transacción",
-                transaction_type,
-            )
-
-        # ── Detalle de la transacción analizada ──
-        st.markdown("<br>", unsafe_allow_html=True)
-        st.markdown("#### Detalle de la Transacción Analizada")
-
-        d1, d2, d3, d4 = st.columns(4)
-        with d1:
-            st.markdown(
-                f'<div class="info-card"><strong>Step</strong><br>{step}</div>',
-                unsafe_allow_html=True,
-            )
-        with d2:
-            st.markdown(
-                f'<div class="info-card"><strong>Monto</strong><br>${amount:,.2f}</div>',
-                unsafe_allow_html=True,
-            )
-        with d3:
-            st.markdown(
-                f'<div class="info-card"><strong>Balance Origen</strong><br>${oldbalance_org:,.2f} → ${newbalance_orig:,.2f}</div>',
-                unsafe_allow_html=True,
-            )
-        with d4:
-            st.markdown(
-                f'<div class="info-card"><strong>Balance Destino</strong><br>${oldbalance_dest:,.2f} → ${newbalance_dest:,.2f}</div>',
-                unsafe_allow_html=True,
-            )
-
-        if is_fraud:
+        with col_b:
             st.markdown("<br>", unsafe_allow_html=True)
-            st.warning(
-                "⚠️ **Recomendación:** Se sugiere bloquear preventivamente la cuenta "
-                "y derivar la operación al equipo de investigación de fraude."
+            oldbalanceDest = st.number_input(
+                "Saldo anterior destino (oldbalanceDest)", min_value=0.0, value=0.0, step=1000.0, format="%.2f"
             )
+            newbalanceDest = st.number_input(
+                "Saldo nuevo destino (newbalanceDest)", min_value=0.0, value=0.0, step=1000.0, format="%.2f"
+            )
+
+        submitted = st.form_submit_button("Analizar Transaccion")
+
+    if submitted:
+        payload = {
+            "type": transaction_type,
+            "amount": float(amount),
+            "oldbalanceOrg": float(oldbalanceOrg),
+            "newbalanceOrig": float(newbalanceOrig),
+            "oldbalanceDest": float(oldbalanceDest),
+            "newbalanceDest": float(newbalanceDest),
+        }
+
+        try:
+            with st.spinner("Consultando API de prediccion..."):
+                response = requests.post(API_URL, json=payload, timeout=15)
+
+            if response.status_code == 422:
+                st.error("Error de validacion. Verifique que los datos sean correctos.")
+            elif not response.ok:
+                detail = response.json().get("detail", response.text)
+                st.error(f"Error del servidor ({response.status_code}): {detail}")
+            else:
+                result = response.json()
+                prob = result["fraud_probability"]
+                nivel = result["nivel_alerta"]
+
+                st.markdown("---")
+                st.markdown("### Resultado del Analisis")
+
+                if nivel == "Improbable":
+                    st.success(f"{nivel} - Probabilidad de fraude: {prob:.2f}%")
+                elif nivel == "Sospechoso":
+                    st.warning(f"{nivel} - Probabilidad de fraude: {prob:.2f}%")
+                else:
+                    st.error(f"{nivel} - Probabilidad de fraude: {prob:.2f}%")
+
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    st.metric("Probabilidad", f"{prob:.2f}%")
+                with col2:
+                    st.metric("Nivel de Riesgo", nivel)
+                with col3:
+                    st.metric("Tipo", transaction_type)
+
+                with st.expander("Ver detalles tecnicos"):
+                    error_orig = payload["newbalanceOrig"] + payload["amount"] - payload["oldbalanceOrg"]
+                    error_dest = payload["oldbalanceDest"] + payload["amount"] - payload["newbalanceDest"]
+                    vacia = 1 if payload["amount"] == payload["oldbalanceOrg"] else 0
+                    st.markdown("**Features calculados por el backend:**")
+                    st.json({
+                        "error_balance_orig": round(error_orig, 2),
+                        "error_balance_dest": round(error_dest, 2),
+                        "vacia_cuenta": vacia,
+                        "type_TRANSFER": 1 if transaction_type == "TRANSFER" else 0,
+                    })
+
+        except requests.exceptions.ConnectionError:
+            st.error(
+                "No se pudo conectar con el backend. "
+                "Asegurese de que la API este corriendo en `localhost:8000`."
+            )
+        except requests.exceptions.Timeout:
+            st.error("La solicitud excedio el tiempo de espera.")
+        except Exception as e:
+            st.error(f"Error inesperado: {e}")
