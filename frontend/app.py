@@ -314,12 +314,12 @@ else:
 
     if submitted:
         payload = {
-            "type": transaction_type,
             "amount": float(amount),
             "oldbalanceOrg": float(oldbalanceOrg),
             "newbalanceOrig": float(newbalanceOrig),
             "oldbalanceDest": float(oldbalanceDest),
             "newbalanceDest": float(newbalanceDest),
+            "type_TRANSFER": transaction_type == "TRANSFER",
         }
 
         try:

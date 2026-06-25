@@ -20,7 +20,7 @@ import numpy as np
 import pandas as pd
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field
 
 import logging
 
@@ -37,17 +37,14 @@ MODEL_PATH = (Path(__file__).parent / "../models/fraud_model.pkl").resolve()
 # Orden EXACTO de las características con el que fue entrenado el modelo.
 # Este orden se respeta al construir el DataFrame que se envía a scikit-learn.
 FEATURE_ORDER = [
-    "step",
     "amount",
     "oldbalanceOrg",
     "newbalanceOrig",
     "oldbalanceDest",
     "newbalanceDest",
-    "isFlaggedFraud",
-    "type_CASH_IN",
-    "type_CASH_OUT",
-    "type_DEBIT",
-    "type_PAYMENT",
+    "error_balance_orig",
+    "error_balance_dest",
+    "vacia_cuenta",
     "type_TRANSFER",
 ]
 
@@ -111,54 +108,24 @@ app.add_middleware(
 class TransactionInput(BaseModel):
     """Esquema de entrada para una transacción a evaluar.
 
-    El frontend debe convertir la selección del tipo de transacción en las
-    variables booleanas one-hot definidas a continuación.
+    El frontend envía los datos básicos y el backend calcula las features
+    derivadas (error_balance_orig, error_balance_dest, vacia_cuenta).
     """
 
-    step: int = Field(..., ge=1, le=744, description="Paso temporal de la transacción (1–744).")
     amount: float = Field(..., ge=0, description="Monto de la transacción.")
     oldbalanceOrg: float = Field(..., ge=0, description="Saldo origen antes de la transacción.")
     newbalanceOrig: float = Field(..., ge=0, description="Saldo origen después de la transacción.")
     oldbalanceDest: float = Field(..., ge=0, description="Saldo destino antes de la transacción.")
     newbalanceDest: float = Field(..., ge=0, description="Saldo destino después de la transacción.")
-    isFlaggedFraud: int = Field(..., ge=0, le=1, description="Flag previo de fraude (0 o 1).")
-
-    type_CASH_IN: bool = Field(..., description="Indica si el tipo es CASH_IN.")
-    type_CASH_OUT: bool = Field(..., description="Indica si el tipo es CASH_OUT.")
-    type_DEBIT: bool = Field(..., description="Indica si el tipo es DEBIT.")
-    type_PAYMENT: bool = Field(..., description="Indica si el tipo es PAYMENT.")
-    type_TRANSFER: bool = Field(..., description="Indica si el tipo es TRANSFER.")
-
-    @field_validator("isFlaggedFraud", mode="before")
-    @classmethod
-    def coerce_flag(cls, v):
-        """Permite recibir el flag como booleano y convertirlo a entero."""
-        if isinstance(v, bool):
-            return int(v)
-        return v
-
-    @model_validator(mode="after")
-    def check_exactly_one_type(self):
-        """Garantiza que exactamente una categoría de transacción esté activa."""
-        type_flags = [
-            self.type_CASH_IN,
-            self.type_CASH_OUT,
-            self.type_DEBIT,
-            self.type_PAYMENT,
-            self.type_TRANSFER,
-        ]
-        if sum(type_flags) != 1:
-            raise ValueError(
-                "Debe seleccionarse exactamente un tipo de transacción (one-hot encoding)."
-            )
-        return self
+    type_TRANSFER: bool = Field(..., description="True si el tipo es TRANSFER, False si es CASH_OUT.")
 
 
 class PredictionResponse(BaseModel):
     """Esquema de salida para el endpoint /predict."""
 
     is_fraud: bool
-    probability: float
+    fraud_probability: float
+    nivel_alerta: str
     message: str
 
 
@@ -178,8 +145,14 @@ class MetricsResponse(BaseModel):
 def build_feature_dataframe(payload: TransactionInput) -> pd.DataFrame:
     """Construye un DataFrame con el orden exacto de características del modelo."""
     data = payload.model_dump()
-    row = {feature: data[feature] for feature in FEATURE_ORDER}
-    return pd.DataFrame([row])
+    row = {feature: data[feature] for feature in FEATURE_ORDER if feature in data}
+
+    # Calcular features derivadas que el modelo espera
+    row["error_balance_orig"] = data["newbalanceOrig"] + data["amount"] - data["oldbalanceOrg"]
+    row["error_balance_dest"] = data["oldbalanceDest"] + data["amount"] - data["newbalanceDest"]
+    row["vacia_cuenta"] = 1 if data["amount"] == data["oldbalanceOrg"] else 0
+
+    return pd.DataFrame([row])[FEATURE_ORDER]
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -239,17 +212,16 @@ def predict_fraud(transaction: TransactionInput):
 
         def nivel_alerta(prob):
             if prob < 0.30:
-                return "Muy Improbable"
+                return "Improbable"
             elif prob < 0.70:
-                return "Probable / Sospechosa"
+                return "Sospechoso"
             else:
                 return "Muy Probable"
-            # esto es una funcion de mapeo, en el  json te devuelve una probabilidad entre 0 y 1, a eso que te devuelve, lo tomas y lo pasas por la logica
-            nivel_alerta = mapear_nivel_alerta(fraud_probability)
+
         # 4. Retornamos la respuesta en formato JSON (FastAPI lo convierte automáticamente)
         return {
             "is_fraud": bool(prediction[0] == 1),
-            "fraud_probability": round(float(fraud_probability) * 100, 2), # En porcentaje
+            "fraud_probability": round(float(fraud_probability) * 100, 2),
             "nivel_alerta": nivel_alerta(fraud_probability),
             "message": "Transacción analizada con éxito."
         }
